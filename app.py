@@ -23,6 +23,11 @@ def es_url_instagram(url: str) -> bool:
     )
 
 
+def limpiar_error(e) -> str:
+    # Quita los códigos de color y recorta el mensaje para mostrarlo en pantalla.
+    return re.sub(r"\x1b\[[0-9;]*m", "", str(e))[:400]
+
+
 def opciones(extra=None):
     base = {"quiet": True, "no_warnings": True, "noplaylist": True}
     if COOKIES:
@@ -45,8 +50,8 @@ def info():
     try:
         with yt_dlp.YoutubeDL(opciones()) as ydl:
             datos = ydl.extract_info(url, download=False)
-    except Exception:
-        return jsonify(error="No se pudo leer el video. Puede ser privado o el enlace no es público."), 422
+    except Exception as e:
+        return jsonify(error="Error real: " + limpiar_error(e)), 422
 
     mejor = max(
         (f for f in datos.get("formats", []) if f.get("height")),
@@ -87,8 +92,8 @@ def descargar():
             datos = ydl.extract_info(url, download=True)
             ruta = os.path.splitext(ydl.prepare_filename(datos))[0] + ".mp4"
         return send_file(ruta, as_attachment=True, download_name=f"instagram_{datos['id']}.mp4")
-    except Exception:
-        return jsonify(error="La descarga falló. Intenta de nuevo."), 500
+    except Exception as e:
+        return jsonify(error="Error real: " + limpiar_error(e)), 500
 
 
 PAGINA = """<!doctype html>
